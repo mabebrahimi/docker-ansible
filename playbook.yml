@@ -1,0 +1,86 @@
+---
+- hosts: all
+  tasks:
+    - name: Find docker application
+      shell: "which docker"
+      ignore_errors: yes
+      register: result
+      tags:
+        - all
+        - preinstall
+
+    - name: Check docker instalation
+      meta: end_host
+      when: result.rc == 0
+      tags:
+        - all
+        - preinstall
+
+    - name: Install required system packages
+      apt: name={{ item }} state=latest update_cache=yes
+      loop:
+        [
+          "apt-transport-https",
+          "ca-certificates",
+          "curl",
+          "gnupg",
+          "lsb-release",
+        ]
+      tags:
+        - all
+        - install
+
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+      tags:
+        - all
+        - install
+
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu bionic stable
+        state: present
+      tags:
+        - all
+        - install
+
+    - name: Update apt and install docker-ce
+      apt: update_cache=yes name=docker-ce state=latest
+      tags:
+        - all
+        - install
+
+    - name: Install Docker Module for Python
+      pip:
+        name: docker
+      tags:
+        - all
+        - install
+
+    - name: Get docker version
+      shell: "docker -v | cut -d ' ' -f 3 | cut -d ',' -f 1"
+      register: version
+      tags:
+        - all
+        - install
+        - test
+
+    - name: Print docker version
+      debug:
+        msg: "Docker version: {{ version.stdout }}"
+      tags:
+        - all
+        - install
+        - test
+
+    - name: Test docker instalation
+      community.docker.docker_container:
+        name: myImage
+        image: hello-world
+        state: present
+      tags:
+        - all
+        - install
+        - test
