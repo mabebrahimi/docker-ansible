@@ -17,7 +17,10 @@
         - preinstall
 
     - name: Install required system packages
-      apt: name={{ item }} state=latest update_cache=yes
+      apt:
+        name: "{{ item }}"
+        state: latest
+        update_cache: yes
       loop:
         [
           "apt-transport-https",
@@ -25,6 +28,7 @@
           "curl",
           "gnupg",
           "lsb-release",
+          "python3-pip",
         ]
       tags:
         - all
@@ -47,7 +51,10 @@
         - install
 
     - name: Update apt and install docker-ce
-      apt: update_cache=yes name=docker-ce state=latest
+      apt:
+        name: docker-ce
+        update_cache: yes
+        state: latest
       tags:
         - all
         - install
@@ -84,3 +91,13 @@
         - all
         - install
         - test
+
+    - name: Install docker compose
+      get_url:
+        url: "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-Linux-x86_64"
+        dest: /usr/local/bin/docker-compose
+        mode: "a+x"
+        force: yes
+      when: >
+        docker_compose_current_version is not defined
+        or docker_compose_current_version is version(docker_compose_version, '<')
